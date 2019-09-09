@@ -58,6 +58,20 @@ const unsigned int morse[LUT_SIZE][MORSE_CHAR_SIZE] = {
   {1, 1, 1, 1, 0}
 };
 
+void ti() {
+  digitalWrite(LED, HIGH);
+  delay(100);
+  digitalWrite(LED, LOW);
+  delay(100);
+}
+
+void ta() {
+  digitalWrite(LED, HIGH);
+  delay(300);
+  digitalWrite(LED, LOW);
+  delay(100);
+}
+
 void display_morse_char(morse_char to_display) {
   for (int i = 0 ; i < MORSE_CHAR_SIZE; i++) {
     int subchar = to_display[i];
@@ -65,21 +79,15 @@ void display_morse_char(morse_char to_display) {
       i = MORSE_CHAR_SIZE + 1;
       break;
     } else if (0 == subchar) {
-      digitalWrite(LED, HIGH);
       Serial.print(".");
-      delay(100);
-      digitalWrite(LED, LOW);
+      ti();
     } else {
-      digitalWrite(LED, HIGH);
       Serial.print("-");
-      delay(300);
-      digitalWrite(LED, LOW);
+      ta();
     }
-
-    delay(100);
   }
 
-  delay(200);
+  delay(300);
   Serial.print(" ");
 }
 
@@ -90,7 +98,14 @@ void get_morse(morse_char * dest, int index) {
   }
 }
 
+void display_morse_msg(morse_char * msg, int msg_size) {
+  for (int i = 0 ; i < msg_size ; i++) {
+    display_morse_char(msg[i]);
+  }
+}
+
 void transmit_morse_message(char * msg, int msg_size) {
+  morse_char morse_msg[msg_size];
   for (int i = 0; i < msg_size ; i++) {
     char a_char = msg[i];
     if (!isascii(a_char)) {
@@ -105,13 +120,16 @@ void transmit_morse_message(char * msg, int msg_size) {
         break;
       }
     }
-    // Serial.print("Found index ");
-    // Serial.println(index);
 
-    morse_char to_morse;
-    get_morse(&to_morse, index);
-    display_morse_char(to_morse);
+    get_morse(&(morse_msg[i]), index);
   }
+  Serial.print("_._._. "); // CT (Start message)
+  ta();ti();ta();ti();ta();ti();
+
+  display_morse_msg(&(morse_msg[0]), msg_size);
+
+  ti();ta();ti();ta();ti();ta();
+  Serial.println("._._."); // AR (End message)
   return;
 }
 
