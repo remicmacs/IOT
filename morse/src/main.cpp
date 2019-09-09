@@ -172,7 +172,8 @@ void listen() {
       Serial.println("Found Off");
       digitalWrite(LED, LOW);
     } else {
-      bool was_on = false;
+      int state = digitalRead(LED);
+      bool was_on = (HIGH == state);
       digitalWrite(LED, LOW);
       Serial.print("Message to broadcast : \"");
       Serial.print(buffer);
