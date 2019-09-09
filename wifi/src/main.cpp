@@ -1,8 +1,8 @@
 #include <Arduino.h>
 #include <WiFi.h>
 
-const char* ssid = "YameteRodolpheSan";
-const char* password =  "E5D4C3B2A1";
+const char* ssid = "APESP32";
+const char* password =  "rootroot";
 
 const int LED = 2;
 
@@ -10,11 +10,18 @@ void connectToNetwork() {
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
+    delay(500);
     Serial.println("Establishing connection to WiFi..");
   }
 
-  digitalWrite(LED, HIGH);   // turn the LED on (HIGH is the voltage level)
+  int blink = 3;
+  while (blink-- > 0) {
+    digitalWrite(LED, HIGH);   // turn the LED on (HIGH is the voltage level)
+    delay(100);
+    digitalWrite(LED, LOW);
+    delay(100);
+  }
+
   Serial.println("Connected to network");
 
 }
