@@ -2,18 +2,18 @@
 #include <WiFi.h>
 #include <inttypes.h>
 
-const char* ssid = "APESP32";
-const char* password =  "rootroot";
+#define LED 12
+#define MORSE_CHAR_SIZE 5
+#define LUT_SIZE 36
 
-const int LED = 2;
+const char* ssid = "APESP32";
+const char* password = "rootroot";
 
 const uint ServerPort = 23;
 WiFiServer Server(ServerPort);
 
 WiFiClient RemoteClient;
 
-#define MORSE_CHAR_SIZE 5
-#define LUT_SIZE 36
 
 typedef unsigned int morse_char[MORSE_CHAR_SIZE];
 
