@@ -9,10 +9,15 @@ HTTPClient http;
 
 const char* ssid = "APESP32";
 const char* password = "rootroot";
+String endpoint = "http://192.168.43.145/";
+
 
 bool light = false;
 int previous = LOW;
 
+/**
+ * Display the payload of a HTTP response.
+ */
 void handleResponse(int httpCode) {
   if (httpCode > 0) { //Check for the returning code
     String payload = http.getString();
@@ -31,22 +36,14 @@ void connectToNetwork() {
     Serial.println("Establishing connection to WiFi..");
   }
 
-  // Blink three times if connection to WiFi is successful
-  int blink = 3;
-  while (blink-- > 0) {
-    digitalWrite(LED_OUT, LOW);
-    delay(100);
-    digitalWrite(LED_OUT, HIGH);
-    delay(100);
-  }
-
   Serial.println("Connected to network");
 
 }
 
 void setup() {
   Serial.begin(115200);
-  pinMode(LED_OUT, OUTPUT);
+
+  // Set the button pin as input
   pinMode(BUTTON_IN, INPUT_PULLDOWN);
 
   WiFi.scanNetworks();
@@ -54,15 +51,19 @@ void setup() {
 
   Serial.println(WiFi.macAddress());
   Serial.println(WiFi.localIP());
-  http.begin("http://192.168.43.145/");
 
-  int httpCode = http.GET();
-  handleResponse(httpCode);
-  digitalWrite(LED_OUT, HIGH);
+  // Change IP here according to the other ESP's IP
+  // http.begin(endpoint);
+  // int httpCode = http.GET();
+  // handleResponse(httpCode);
+
 }
 
+/**
+ * Called when the button is pressed
+ */
 void toggle() {
-  http.begin("http://192.168.43.145/get");
+  http.begin(endpoint + "get");
   int httpCde = http.GET();
   if (httpCde > 0) { //Check for the returning code
     String payload = http.getString();
@@ -76,24 +77,27 @@ void toggle() {
   int httpCode = -1;
   if (light) {
     digitalWrite(LED_OUT, HIGH);
-    http.begin("http://192.168.43.145/off");
+    http.begin(endpoint + "off");
 
   } else {
     digitalWrite(LED_OUT, LOW);
-    http.begin("http://192.168.43.145/on");
+    http.begin(endpoint + "on");
   }
   light = !light;
 
-  httpCode = http.GET(); //Make the request
+  httpCode = http.GET();
   handleResponse(httpCode);
 }
 
 void loop() {
+  delay(100);
   int state = digitalRead(BUTTON_IN);
   if (previous != state && state == HIGH) {
-    toggle();
+    Serial.println("Toggle");
+    // toggle();
   }
 
   previous = state;
-  delay(100);
+
+  Serial.printf("%s\n", (HIGH == state) ? "HIGH" : "LOW");
 }
