@@ -4,15 +4,12 @@
 
 HTTPClient http;
 
-#define LED_OUT 12
 #define BUTTON_IN 27
 
 const char* ssid = "APESP32";
 const char* password = "rootroot";
 String endpoint = "http://192.168.43.145/";
 
-
-bool light = false;
 int previous = LOW;
 
 /**
@@ -29,6 +26,7 @@ void handleResponse(int httpCode) {
 }
 
 void connectToNetwork() {
+  WiFi.scanNetworks();
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -46,7 +44,6 @@ void setup() {
   // Set the button pin as input
   pinMode(BUTTON_IN, INPUT_PULLDOWN);
 
-  WiFi.scanNetworks();
   connectToNetwork();
 
   Serial.println(WiFi.macAddress());
@@ -63,6 +60,7 @@ void setup() {
  * Called when the button is pressed
  */
 void toggle() {
+  bool light = false;
   http.begin(endpoint + "get");
   int httpCde = http.GET();
   if (httpCde > 0) { //Check for the returning code
@@ -76,14 +74,11 @@ void toggle() {
   }
   int httpCode = -1;
   if (light) {
-    digitalWrite(LED_OUT, HIGH);
     http.begin(endpoint + "off");
 
   } else {
-    digitalWrite(LED_OUT, LOW);
     http.begin(endpoint + "on");
   }
-  light = !light;
 
   httpCode = http.GET();
   handleResponse(httpCode);
