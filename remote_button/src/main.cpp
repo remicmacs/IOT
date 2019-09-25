@@ -6,9 +6,9 @@ HTTPClient http;
 
 #define BUTTON_IN 27
 
-const char* ssid = "APESP32";
+const char* ssid = "ESP32_AP";
 const char* password = "rootroot";
-String endpoint = "http://192.168.43.145/";
+String endpoint = "http://192.168.4.1/";
 
 int previous = LOW;
 
@@ -48,12 +48,6 @@ void setup() {
 
   Serial.println(WiFi.macAddress());
   Serial.println(WiFi.localIP());
-
-  // Change IP here according to the other ESP's IP
-  // http.begin(endpoint);
-  // int httpCode = http.GET();
-  // handleResponse(httpCode);
-
 }
 
 /**
@@ -65,7 +59,7 @@ void toggle() {
   int httpCde = http.GET();
   if (httpCde > 0) { //Check for the returning code
     String payload = http.getString();
-    light = payload.equals("true");
+    light = payload.equals("1");
     Serial.println(httpCde);
     Serial.println(light);
   } else {
@@ -89,10 +83,10 @@ void loop() {
   int state = digitalRead(BUTTON_IN);
   if (previous != state && state == HIGH) {
     Serial.println("Toggle");
-    // toggle();
+    toggle();
   }
 
   previous = state;
 
-  Serial.printf("%s\n", (HIGH == state) ? "HIGH" : "LOW");
+  // Serial.printf("%s\n", (HIGH == state) ? "HIGH" : "LOW");
 }
