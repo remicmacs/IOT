@@ -215,8 +215,121 @@ class CustomBLEClientCallback : public BLEClientCallbacks {
 };
 ```
 
+On se crée une fonction de connexion :
 
-### Récupération de la valeur
+```cpp
+bool connect_to_service() {
+    Serial.print("Connexion au service ");
+    Serial.println(found_device->getAddress().toString().c_str());
+
+    BLEClient * client_ptr = BLEDevice::createClient();
+    Serial.println("Client créé");
+
+    // Association des callbacks clients custom
+    client_ptr->setClientCallbacks(new CustomBLEClientCallback());
+
+    Serial.println("Callbacks enregistrés");
+
+    // Connexion au service BLE
+    client_ptr->connect(found_device);
+    Serial.println("Connecté au service");
+
+    // Obtain a reference to the service we are after in the remote BLE server.
+    BLERemoteService * remote_service_ptr = client_ptr->getService(
+        UUID_REMOTE_SERVICE
+    );
+    if (remote_service_ptr == nullptr) {
+        Serial.print("Échec de la recherche du service #");
+        Serial.println(UUID_REMOTE_SERVICE.toString().c_str());
+        client_ptr->disconnect();
+
+        delete client_ptr;
+        return false;
+    }
+    Serial.println("Service trouvé");
+
+    // Maintenant qu'on est sûrs d'avoir le bon service, on cherche la bonne charactéristique
+    remote_charac_ptr = remote_service_ptr->getCharacteristic(
+        UUID_REMOTE_CHARACTERISTIC
+    );
+    if (remote_charac_ptr == nullptr) {
+        Serial.print("Échec de la recherche de la carac. #");
+        Serial.println(UUID_REMOTE_CHARACTERISTIC.toString().c_str());
+        client_ptr->disconnect();
+        delete client_ptr;
+        return false;
+    }
+    Serial.println("Caractéristique trouvée");
+
+    // Lisons la valeur
+    if(remote_charac_ptr->canRead()) {
+      std::string value = remote_charac_ptr->readValue();
+      Serial.print("La valeur est : ");
+      Serial.println(value.c_str());
+    }
+
+    Serial.println("Fin de la séquence de connexion");
+
+    return true;
+}
+```
+
+Et on met à jour le callback créé dans l'exercice précédent pour qu'il renseigne un flag global
+et qu'il sauvegarde l'objet représenant le service à distance dans une variable globale :
+
+```cpp
+// On implémente la méthode virtuelle `onResult` pour afficher les informations
+// du service trouvé lors d'un scan
+class FoundAdvertisedDeviceCallback: public BLEAdvertisedDeviceCallbacks {
+    void onResult(BLEAdvertisedDevice advertised_device) {
+        Serial.printf(
+            "Device disponible : %s \n",
+            advertised_device.toString().c_str()
+        );
+
+        // Est-ce bien le service recherché ?
+        if (advertised_device.haveServiceUUID() &&
+            advertised_device.isAdvertisingService(UUID_REMOTE_SERVICE)
+        ) {
+            device_is_found = true;
+
+            BLEDevice::getScan()->stop();
+            found_device = new BLEAdvertisedDevice(advertised_device);
+        }
+    }
+};
+```
+
+### Modification de la valeur
+
+Dans la fonction `loop`, on va modifier la valeur de la caractéristique distante.
+
+```cpp
+
+if (device_is_found && !connected) {
+    connect_to_service();
+
+    if (!connected) {
+        Serial.println("Connexion a échoué, il y a un problème...");
+    }
+}
+
+if (connected) {
+    String new_value = "Secondes depuis le boot: " + String(millis()/1000);
+    Serial.println(
+        "Rafraichissement de la valeur : \"" + new_value + "\""
+    );
+
+    remote_charac_ptr->writeValue(new_value.c_str(), new_value.length());
+    Serial.println("Fin du rafraichissement");
+}
+```
+
+Attention la condition `if (device_is_found && !connected) ` est importante car c'est ce qui va s'assurer qu'on est bien connecté au service.
+
+## Exercice bonus
+
+Maintenant que vous savez mettre à disposition un service BLE et lire/écrire une caractéristique, vous pouvez réimplémenter l'exercice avec une télécommande de LED mais via BLE !
 
 ## Credits
 

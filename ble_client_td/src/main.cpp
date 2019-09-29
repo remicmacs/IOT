@@ -153,6 +153,14 @@ void setup() {
 
 void loop() {
 
+    if (device_is_found && !connected) {
+        connect_to_service();
+
+        if (!connected) {
+            Serial.println("Connexion a échoué, il y a un problème...");
+        }
+    }
+
     if (connected) {
         String new_value = "Secondes depuis le boot: " + String(millis()/1000);
         Serial.println(
@@ -161,12 +169,6 @@ void loop() {
 
         remote_charac_ptr->writeValue(new_value.c_str(), new_value.length());
         Serial.println("Fin du rafraichissement");
-    } else if (device_is_found) {
-        connect_to_service();
-
-        if (!connected) {
-            Serial.println("Connexion a échoué, il y a un problème...");
-        }
     }
     delay(1000);
 }
