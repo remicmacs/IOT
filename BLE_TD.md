@@ -191,7 +191,30 @@ BLEScanResults foundDevices = BLEScan_ptr->start(scan_duration, false);
 
 Vous devriez voir passer des résultats en console.
 
+## Lire / Écrire avec un client
+
+En repartant du code client précédent, on va lire la valeur proposée par le service, et la modifier.
+
 ### Connexion
+
+Pour se connecter on a besoin d'un objet client, et de quelques flags accessibles dans le scope global.
+
+On créé des callbacks ad hoc pour avoir l'information de la connexion :
+
+```cpp
+class CustomBLEClientCallback : public BLEClientCallbacks {
+    void onConnect(BLEClient * client_ptr) {
+        connected = true;
+        Serial.println("Connected to service");
+    }
+
+    void onDisconnect(BLEClient * client_ptr) {
+        connected = false;
+        Serial.println("Disconnected from service");
+    }
+};
+```
+
 
 ### Récupération de la valeur
 
