@@ -14,9 +14,9 @@ Pour créer un serveur BLE, il faut inclure les headers suivants :
 
 Le principe du BLE est qu'il est structuré autour de la logique GATT (_Generic ATTributes_).
 
-![GATT](GATT-BLE-ESP32.png)
+![GATT](https://i2.wp.com/randomnerdtutorials.com/wp-content/uploads/2018/06/GATT-BLE-ESP32.png?w=750&ssl=1)
 
-Il va donc falloir créer un **serveur**, puis déclarer un **service**. On attachera ensuite une **caractéristique** à ce service, elle-même sera doté d'un **descripteur**.
+Il va donc falloir créer un **serveur**, puis déclarer un **service**. On attachera ensuite une **caractéristique** à ce service.
 
 ### Créer un server
 
@@ -32,11 +32,15 @@ BLEServer * server_ptr = BLEDevice::createServer();
 
 ### Créer un service
 
-Un service est un regroupement d'informations, comme par exemple la donnée d'un capteur. La liste officielle des services définie par le SIG est disponible [ici](https://www.bluetooth.com/specifications/gatt/services/).
+Un service est un regroupement d'informations, comme par exemple la donnée d'un capteur.
 
-Un ou plusieurs services compose un **profil**. Plusieurs profils sont déjà définis dans le standard BLE.
+La liste officielle des services définie par le SIG est disponible [ici](https://www.bluetooth.com/specifications/gatt/services/).
+
+Un ou plusieurs services composent un **profil**. Plusieurs profils sont déjà définis dans le standard BLE.
 
 Le service créé va avoir besoin d'un UUID. On peut en générer un grâce à [ce site](https://www.uuidgenerator.net/).
+
+**Attention** : utilisez impérativement un UUID différent de celui des exemples sinon il y aura des **conflits** entre tous les services BLE.
 
 On définit l'UUID ainsi obtenu pour qu'il soit facilement disponible dans notre code.
 
@@ -58,19 +62,19 @@ La liste des propriétés qu'on peut attribuer à une caractéristique GATT est 
 * Lire : autorise les clients à lire cette donnée (`BLECharacteristic::BLERead`)
 * Modifier (Write) : autorise les clients à modifier cette donnée, avec confirmation (`BLECharacteristic::BLEWrite`)
 * Modifier sans réponse : autorise les clients à modifier cette donnée, sans confirmation du serveur `BLECharacteristic::BLEWriteWithoutResponse`
-* Notifier : permet au serveur d'attacher un handler de notification au changement de cette donnée `BLECharacteristic::BLENotify`
-* Indiquer : permet au serveur d'attacher un handler d'indication au changement de cette donnée`BLECharacteristic::BLEIndicate`
+* Notifier : permet d'attacher un handler de notification au changement de cette donnée `BLECharacteristic::BLENotify`
+* Indiquer : permet d'attacher un handler d'indication au changement de cette donnée`BLECharacteristic::BLEIndicate`
 
-Différence **notify** vs **indicate** : **notify** fait juste remonter l'information à la manière d'une notification, alors que **indicate** suppose que le client recevant l'indication doive renvoyer un `ACK` pour confirmer réception.
+Différence _notify_ vs _indicate_ : _notify_ fait juste remonter l'information à la manière d'une notification, alors que _indicate_ suppose que le client recevant l'indication doive renvoyer un `ACK` pour confirmer réception.
 
 D'autres propriétés GATT existent pour assurer une protection des données, à savoir :
 
-* Modifier de manière signée (Signed Write Command)
-* **Queued Write** : ajouter une modification à une file
+* Modifier de manière signée (_Signed Write Command_)
+* _Queued Write_ : ajouter une modification à une file
 
-mais ces propriétés ne sont pas implémentées dans la librairie Arduino que nous utilisons.
+mais ces propriétés ne sont pas implémentées dans la librairie que nous utilisons.
 
-Pour déclarer les propriété d'une caractéristique, il suffit de le faire à l'instantiation :
+Pour déclarer les propriétés d'une caractéristique, il suffit de le faire à l'instantiation :
 
 ```cpp
 // Création du service
@@ -83,7 +87,7 @@ BLECharacteristic * charact_ptr = service_ptr->createCharacteristic(
 );
 ```
 
-Ici on crée une caractéristique avec les propriété `READ` et `WRITE`.
+Ici on crée une caractéristique avec les propriétés `READ` et `WRITE`.
 
 On peut maintenant enregistrer une valeur dans la caractéristique avec `setValue`.
 
@@ -92,18 +96,19 @@ On peut maintenant enregistrer une valeur dans la caractéristique avec `setValu
 Il faut maintenant :
 
 1. Démarrer le service
-2. Créer l'_advertising_
+2. Créer l'_advertising_ pour que le service soit visible (_discoverable_)
 3. Enregistrer le service créé dans l'_advertising_
 4. Démarrer l'_advertising_
 
 ```cpp
 service_ptr->start();
 
-// On diffuse les paquets d'advertising qui vont rendre visible notre service
+// On enregistre le service qui va être diffusé
 BLEAdvertising * advertising_ptr = BLEDevice::getAdvertising();
 advertising_ptr->addServiceUUID(UUID_SERVICE);
 advertising_ptr->setScanResponse(true);
 
+// On diffuse les paquets d'advertising qui vont rendre visible notre service
 BLEDevice::startAdvertising();
 ```
 
@@ -113,13 +118,15 @@ Pour voir le service associé au serveur et les caractéristiques qu'il contient
 
 Normalement il est possible de modifier la valeur via le téléphone et la consulter sur le serveur de l'ESP avec `getValue`.
 
-**Indice** : il faut réussir à partager le pointeur sur la caractéristique entre la fonction `setup` et la fonction `loop`.
+**Indice** : dans le code serveur, il faut réussir à partager le pointeur sur la caractéristique entre la fonction `setup` et la fonction `loop`.
 
 **Indice n°2** : `getValue` retourne une `String` C++ et `Serial.println` ne va pas forcément aimer.
 
+**Attention** : essayez d'envoyer une quantité de donnée inférieure ou égale à la quantité initiale.
+
 ## Scan client
 
-Un service sans client n'est pas très intéressant. On va créer un client capable de scanner les différents services BLE disponible et de se connecter au bon pour en consulter la valeur.
+Un service sans client n'est pas très intéressant. On va créer un client capable de scanner les différents services BLE disponibles et de se connecter au bon pour en consulter la valeur.
 
 Pour cet exercice, les headers suivants sont requis :
 
@@ -135,7 +142,6 @@ Pour cet exercice, les headers suivants sont requis :
 On doit d'abord initialiser le module BLE puis créer un objet qui se chargera du scan :
 
 ```cpp
-
 BLEDevice::init("Mon_Client_BLE");
 
 BLEScan * BLEScan_ptr = BLEDevice::getScan();
@@ -152,6 +158,7 @@ class FoundAdvertisedDeviceCallback: public BLEAdvertisedDeviceCallbacks {
     void onResult(BLEAdvertisedDevice advertised_device) {
         Serial.printf(
             "Advertised Device: %s \n",
+            // Conversion d'une String C++ à un char * C
             advertised_device.toString().c_str()
         );
     }
@@ -199,7 +206,7 @@ En repartant du code client précédent, on va lire la valeur proposée par le s
 
 Pour se connecter on a besoin d'un objet client, et de quelques flags accessibles dans le scope global.
 
-On créé des callbacks ad hoc pour avoir l'information de la connexion :
+On crée des callbacks _ad hoc_ pour afficher l'information associé au services découverts :
 
 ```cpp
 class CustomBLEClientCallback : public BLEClientCallbacks {
@@ -215,67 +222,76 @@ class CustomBLEClientCallback : public BLEClientCallbacks {
 };
 ```
 
-On se crée une fonction de connexion :
+On va créer une routine de connexion au service.
+
+Pour se connecter on a besoin de : 
+
+1. Disposer d'un objet représentant le dispositif BLE découvert lors du scan. Dans les exemples de code suivant ce sera la variable `BLEAdvertisedDevice * found_device`
+2. Instantier un objet client représentant notre propre _device_
+3. Récupérer le service cible s'il est bien associé à la _device_ découverte
+4. Trouver la caractéristique correspondant à la valeur qu'on veut consulter
+
+Pour disposer du pointeur `found_device`, à vous de voir si vous préférez le passer en argument ou le mettre dans le scope global, c'est pas un TD de C++, débrouillez-vous.
+
+#### Création du client
 
 ```cpp
-bool connect_to_service() {
-    Serial.print("Connexion au service ");
-    Serial.println(found_device->getAddress().toString().c_str());
+BLEClient * client_ptr = BLEDevice::createClient();
+Serial.println("Client créé");
 
-    BLEClient * client_ptr = BLEDevice::createClient();
-    Serial.println("Client créé");
+// Association des callbacks clients custom
+client_ptr->setClientCallbacks(new CustomBLEClientCallback());
 
-    // Association des callbacks clients custom
-    client_ptr->setClientCallbacks(new CustomBLEClientCallback());
-
-    Serial.println("Callbacks enregistrés");
-
-    // Connexion au service BLE
-    client_ptr->connect(found_device);
-    Serial.println("Connecté au service");
-
-    // Obtain a reference to the service we are after in the remote BLE server.
-    BLERemoteService * remote_service_ptr = client_ptr->getService(
-        UUID_REMOTE_SERVICE
-    );
-    if (remote_service_ptr == nullptr) {
-        Serial.print("Échec de la recherche du service #");
-        Serial.println(UUID_REMOTE_SERVICE.toString().c_str());
-        client_ptr->disconnect();
-
-        delete client_ptr;
-        return false;
-    }
-    Serial.println("Service trouvé");
-
-    // Maintenant qu'on est sûrs d'avoir le bon service, on cherche la bonne charactéristique
-    remote_charac_ptr = remote_service_ptr->getCharacteristic(
-        UUID_REMOTE_CHARACTERISTIC
-    );
-    if (remote_charac_ptr == nullptr) {
-        Serial.print("Échec de la recherche de la carac. #");
-        Serial.println(UUID_REMOTE_CHARACTERISTIC.toString().c_str());
-        client_ptr->disconnect();
-        delete client_ptr;
-        return false;
-    }
-    Serial.println("Caractéristique trouvée");
-
-    // Lisons la valeur
-    if(remote_charac_ptr->canRead()) {
-      std::string value = remote_charac_ptr->readValue();
-      Serial.print("La valeur est : ");
-      Serial.println(value.c_str());
-    }
-
-    Serial.println("Fin de la séquence de connexion");
-
-    return true;
-}
+Serial.println("Callbacks enregistrés");
 ```
 
-Et on met à jour le callback créé dans l'exercice précédent pour qu'il renseigne un flag global
-et qu'il sauvegarde l'objet représenant le service à distance dans une variable globale :
+#### Connexion au _device_
+
+```cpp
+// Connexion au service BLE
+client_ptr->connect(found_device);
+Serial.println("Connecté au device");
+```
+
+#### Récupération du service
+
+```cpp
+// On récupère le pointeur sur le service recherché
+BLERemoteService * remote_service_ptr = client_ptr->getService(
+    UUID_REMOTE_SERVICE
+);
+if (remote_service_ptr == nullptr) {
+    Serial.print("Échec de la recherche du service #");
+    Serial.println(UUID_REMOTE_SERVICE.toString().c_str());
+    client_ptr->disconnect();
+
+    delete client_ptr;
+    return false;
+}
+Serial.println("Service trouvé");
+```
+
+#### Récupération de la caractéristique
+
+```cpp
+    // Maintenant qu'on est sûrs d'avoir le bon service, on cherche la bonne charactéristique
+remote_charac_ptr = remote_service_ptr->getCharacteristic(
+    UUID_REMOTE_CHARACTERISTIC
+);
+if (remote_charac_ptr == nullptr) {
+    Serial.print("Échec de la recherche de la carac. #");
+    Serial.println(UUID_REMOTE_CHARACTERISTIC.toString().c_str());
+    client_ptr->disconnect();
+    delete client_ptr;
+    return false;
+}
+Serial.println("Caractéristique trouvée");
+
+```
+
+#### Savoir si le bon service a été trouvé
+
+On met à jour le callback créé dans l'exercice précédent pour qu'on sache quand lancer la routine de connexion.
 
 ```cpp
 // On implémente la méthode virtuelle `onResult` pour afficher les informations
@@ -298,11 +314,24 @@ class FoundAdvertisedDeviceCallback: public BLEAdvertisedDeviceCallbacks {
         }
     }
 };
+
+```
+
+### Lecture de la valeur
+
+```cpp
+// Lisons la valeur
+if(remote_charac_ptr->canRead()) {
+  std::string value = remote_charac_ptr->readValue();
+  Serial.print("La valeur est : ");
+  Serial.println(value.c_str());
+}
+
 ```
 
 ### Modification de la valeur
 
-Dans la fonction `loop`, on va modifier la valeur de la caractéristique distante.
+Dans la fonction `loop`, on va modifier la valeur de la caractéristique distante toutes les secondes.
 
 ```cpp
 
@@ -336,3 +365,8 @@ Maintenant que vous savez mettre à disposition un service BLE et lire/écrire u
 [Neil Kolban](https://github.com/nkolban/esp32-snippets/)
 
 [Random Nerd Tutorials](https://randomnerdtutorials.com/esp32-bluetooth-low-energy-ble-arduino-ide/)
+
+## Code complet
+
+* [Serveur](https://github.com/remicmacs/IOT/blob/master/ble_td/src/main.cpp)
+* [Client](https://github.com/remicmacs/IOT/blob/master/ble_client_td/src/main.cpp)

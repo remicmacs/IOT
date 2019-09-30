@@ -51,9 +51,9 @@ bool connect_to_service() {
 
     // Connexion au service BLE
     client_ptr->connect(found_device);
-    Serial.println("Connecté au service");
+    Serial.println("Connecté au device");
 
-    // Obtain a reference to the service we are after in the remote BLE server.
+    // On récupère le pointeur sur le service recherché
     BLERemoteService * remote_service_ptr = client_ptr->getService(
         UUID_REMOTE_SERVICE
     );
